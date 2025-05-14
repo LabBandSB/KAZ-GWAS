@@ -45,6 +45,14 @@ plink --bfile custom_kaz7 --maf 0.001 --make-bed --out custom_kaz8
 
 At this stage I removed all non-nucleotide SNPs (indels). But they are already not here. They must have gotten filtered out at some point.
 plink --bfile custom_kaz8 --snps-only 'just-acgt' --make-bed --out custom_kaz9
+
+# ROH
+plink --bfile custom_kaz9_autosomal \
+--homozyg-density 60 \
+--homozyg-gap 500 \
+--homozyg-window-snp 100 \
+--homozyg-window-het 1 \
+--out kaz
 ```
 
 # Working with reference data:
