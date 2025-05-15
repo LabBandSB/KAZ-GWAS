@@ -166,7 +166,21 @@ plink --bfile custom_kaz9 --recode vcf --out custom_kaz9_all
 bcftools view -h custom_kaz9_autosomal.vcf > kaz_a1.vcf && bcftools view -H custom_kaz9_autosomal.vcf > kaz_a2.vcf && tail -n +2 maf_custom_kaz9_autosomal.afreq | cut -f 6,7 > added_info.txt && head -n 1 maf_custom_kaz9_autosomal.afreq | cut -f 6,7 > added_header.txt && (sed '$d' kaz_a1.vcf; paste <(tail -n 1 kaz_a1.vcf) added_header.txt) > kaz_a4.vcf && paste kaz_a2.vcf added_info.txt > kaz_a3.vcf && cat kaz_a4.vcf kaz_a3.vcf > kaz_a5.vcf && mv kaz_a5.vcf ./autosomal_ext_for_annovar.vcf
 
 # ROH
-plink --bfile custom_kaz9_autosomal --homozyg-density 60 --homozyg-gap 500 --homozyg-window-snp 100 --homozyg-window-het 0
+plink --bfile custom_kaz9_autosomal --exclude merged-merge.missnp --bmerge hapmap3.hg19.bed hapmap3.hg19.bim hapmap3.hg19.fam --make-bed --out merged
+plink --bfile custom_kaz9_autosomal --bmerge all3.bed all3.bim all3.fam --make-bed --out merged
+plink --bfile custom_kaz9_autosomal --bmerge hgdp.hg19.bed hgdp.hg19.bim hgdp.hg19.fam --make-bed --out merged
+
+Problem - too few SNPs with all my referent datasets. Potentially need WGS referent datasets to retain 300000 SNPs
+plink --bfile merged \
+--homozyg \
+--homozyg-snp 50 \
+--homozyg-kb 1500 \
+--homozyg-window-snp 100 \
+--homozyg-density 60 \
+--homozyg-gap 500 \
+--homozyg-window-het 1 \
+--homozyg-window-missing 1 \
+--out kaz
 
 # IBD between kazakhs only and between different ethnicities
 plink --bfile custom_kaz9_autosomal --genome --out ibd_kaz
