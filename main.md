@@ -165,13 +165,65 @@ plink --bfile custom_kaz9 --recode vcf --out custom_kaz9_all
 # making extended vcfs
 bcftools view -h custom_kaz9_autosomal.vcf > kaz_a1.vcf && bcftools view -H custom_kaz9_autosomal.vcf > kaz_a2.vcf && tail -n +2 maf_custom_kaz9_autosomal.afreq | cut -f 6,7 > added_info.txt && head -n 1 maf_custom_kaz9_autosomal.afreq | cut -f 6,7 > added_header.txt && (sed '$d' kaz_a1.vcf; paste <(tail -n 1 kaz_a1.vcf) added_header.txt) > kaz_a4.vcf && paste kaz_a2.vcf added_info.txt > kaz_a3.vcf && cat kaz_a4.vcf kaz_a3.vcf > kaz_a5.vcf && mv kaz_a5.vcf ./autosomal_ext_for_annovar.vcf
 
+# IBD between kazakhs only and between different ethnicities
+plink --bfile custom_kaz9_autosomal --genome --out ibd_kaz
+plink --bfile all14 --genome --out ibd_all
+./average_ibd.py ibd_all.genome ethnic_final.tsv
+cat ibd_all_average.txt | grep Kazakh | sort -gk 3,3 > average_ibd_kazakh.tsv
+
 # ROH
 plink --bfile custom_kaz9_autosomal --exclude merged-merge.missnp --bmerge hapmap3.hg19.bed hapmap3.hg19.bim hapmap3.hg19.fam --make-bed --out merged
 plink --bfile custom_kaz9_autosomal --bmerge all3.bed all3.bim all3.fam --make-bed --out merged
 plink --bfile custom_kaz9_autosomal --bmerge hgdp.hg19.bed hgdp.hg19.bim hgdp.hg19.fam --make-bed --out merged
+```
+
+
+
 
 Problem - too few SNPs with all my referent datasets. Potentially need WGS referent datasets to retain 300000 SNPs
-plink --bfile merged \
+
+Solution: found WGS HGDP dataset in PLINK format in PLINK resources website. Workflow:
+```bash
+# 1) un-archive files and rename for conversion (I will use phased dataset)
+mv hgdp.psam hgdp_statphase.psam
+unzstd *hgdp_statphase*
+# 2) turn into PLINK binary files (split multi-allelic variants)
+plink2 --pfile hgdp_statphase --make-bed --out hgdp_hg38 --allow-extra-chr --max-alleles 2
+# 3) liftover my data to hg38
+plink2 --bfile custom_kaz9_autosomal --recode ped --out kaz_hg19
+awk '{print "chr"$1,"\t",$4,"\t",$4+1,"\t",$2}' kaz_hg19.map > kaz_hg19.bed
+~/tools/liftover/liftOver kaz_hg19.bed ~/tools/liftover/hg19ToHg38.over.chain.gz kaz_hg38.bed unmap
+awk '!/^#/ {print $4}' unmap > unmapped.txt
+plink --file kaz_hg19 --exclude unmapped.txt --recode --out kaz_hg38
+awk '{print $1,"\t",$4,"\t",0,"\t",$2}' kaz_hg38.bed > kaz_hg38.map
+perl -p -i -e 's/chr//g' kaz_hg38.map
+plink --file kaz_hg38 --make-bed --allow-extra-chr --out kaz_hg38
+# 4) merge with HGDP dataset
+cat kaz_hg38.bim | cut -f 2 > to_keep.tsv
+plink2 --bfile hgdp_hg38 --extract to_keep.tsv --make-bed --out hgdp_for_merge
+plink --bfile kaz_hg38 --bmerge hgdp_for_merge  --threads 32 --allow-extra-chr --make-bed --out merged
+plink --bfile hgdp_for_merge --flip merged-merge.missnp --make-bed --out hgdp_for_merge2
+plink --bfile kaz_hg38 --bmerge hgdp_for_merge2  --threads 32 --allow-extra-chr --make-bed --out merged
+plink --bfile hgdp_for_merge2 --exclude merged-merge.missnp --make-bed --out hgdp_for_merge3
+plink --bfile kaz_hg38 --bmerge hgdp_for_merge3  --threads 32 --allow-extra-chr --make-bed --out merged
+
+# 5) QC of merged data
+plink --bfile merged --allow-extra-chr --chr 1-22 --make-bed --out merged1
+plink --bfile merged1 --geno 0.02 --make-bed --out merged2
+plink --bfile merged2 --mind 0.02 --make-bed --out merged3
+plink --bfile merged3 --maf 0.001 --make-bed --out merged4
+awk '{$6 = -9; print}' merged4.fam > merged4_modified.fam && mv merged4_modified.fam merged4.fam
+# modifying FID to be IID
+cat merged4.fam | awk '{print $2"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6}' > merged5.fam
+cp merged4.bim ./merged5.bim
+cp merged4.bed ./merged5.bed
+plink --bfile merged5 --keep to_keep_samples.tsv --make-bed --out merged6
+plink2 --bfile merged6 --pca 10 --out all_pca
+python plot_eigenvec.py all_pca.eigenvec ethnic.tsv
+#PCA looks as expected
+
+# 6) run ROH calculations for each individual
+plink --bfile merged6 \
 --homozyg \
 --homozyg-snp 50 \
 --homozyg-kb 1500 \
@@ -180,11 +232,8 @@ plink --bfile merged \
 --homozyg-gap 500 \
 --homozyg-window-het 1 \
 --homozyg-window-missing 1 \
---out kaz
+--out kaz_hgdp_roh
 
-# IBD between kazakhs only and between different ethnicities
-plink --bfile custom_kaz9_autosomal --genome --out ibd_kaz
-plink --bfile all14 --genome --out ibd_all
-./average_ibd.py ibd_all.genome ethnic_final.tsv
-cat ibd_all_average.txt | grep Kazakh | sort -gk 3,3 > average_ibd_kazakh.tsv
+# 7) calculate F(ROH) for each individuals, caclulate number of segments of different length for each individual, and calculate average parameters for all inidividuals in each population
+in python script FROH_script.ipynb
 ```
