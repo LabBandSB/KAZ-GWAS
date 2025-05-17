@@ -235,5 +235,63 @@ plink --bfile merged6 \
 --out kaz_hgdp_roh
 
 # 7) calculate F(ROH) for each individuals, caclulate number of segments of different length for each individual, and calculate average parameters for all inidividuals in each population
-in python script FROH_script.ipynb
+# in python script FROH_script.ipynb
 ```
+
+
+
+
+
+LSBL test for statistically significant differences between populations:
+# 1) using HGDP WGS data get 3 datasets (separate) with Kazakh (224) + East Asian (152) + European (121)
+
+cat ethnic.tsv | grep -e French -e Basque -e Sardinian -e Russian -e Orcadian -e Tuscan -e Bergamo | awk '{print $1"\t"$1}' > samples_EUR.txt
+cat ethnic.tsv | grep -e Han -e Japanese -e Dai -e Hezhen -e Miao -e Naxi -e Oroqen -e She -e Tujia -e Tu -we Xibo -e Yi -e Cambodian -e Lahu -e Daur -e Mongolian | awk '{print $1"\t"$1}' > samples_EAS.txt
+cat ethnic.tsv | grep Kazakh | awk '{print $1"\t"$1}' > samples_KAZ.txt
+plink --bfile merged6 --keep samples_EUR.txt --make-bed --out only_EUR
+plink --bfile merged6 --keep samples_EAS.txt --make-bed --out only_EAS
+plink --bfile merged6 --keep samples_KAZ.txt --make-bed --out only_KAZ
+
+# 2) get MAFs for all SNPs for each of these 3 datasets
+plink2 --bfile only_EUR  --freq --out only_EUR
+plink2 --bfile only_EAS  --freq --out only_EAS
+plink2 --bfile only_KAZ  --freq --out only_KAZ
+
+# 3) merge 3 MAF tables together
+join -1 1 -2 1 \
+  <(awk 'NR>1 {print $2, $6}' only_EUR.afreq | sort -k1,1) \
+  <(awk 'NR>1 {print $2, $6}' only_EAS.afreq | sort -k1,1) | \
+join -1 1 -2 1 - \
+  <(awk 'NR>1 {print $2, $6}' only_KAZ.afreq | sort -k1,1) | \
+awk 'BEGIN{OFS="\t"; print "rsID\tMAF_EUR\tMAF_EAS\tMAF_KAZ"} {print $1, $2, $3, $4}' > cat_3pops_mafs.txt
+
+# 4) Get pairwise Fst values between KAZ, EUR, EAS
+Via PLINK (not using MAFs calculated earlier):
+cat only_EUR.fam | awk '{print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t""EUR"}' > only_EUR1.fam
+cat only_EAS.fam | awk '{print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t""EAS"}' > only_EAS1.fam
+cat only_KAZ.fam | awk '{print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t""KAZ"}' > only_KAZ1.fam
+
+echo -e "FID\tIID\tPOP" > pheno_file.txt
+cat only_EUR1.fam | cut -f 1,2,6 >> pheno_file.txt
+cat only_EAS1.fam | cut -f 1,2,6 >> pheno_file.txt
+cat only_KAZ1.fam | cut -f 1,2,6 >> pheno_file.txt
+plink --bfile only_KAZ --bmerge only_EUR.bed only_EUR.bim only_EUR1.fam  --make-bed --out temp1
+plink --bfile temp1 --bmerge only_EAS.bed only_EAS.bim only_EAS1.fam  --make-bed --out temp2
+
+plink2 --bfile temp2 \
+  --pheno pheno_file.txt \
+  --pheno-name POP \
+  --fst POP report-variants \
+  --out pairwise_fst
+
+join -1 1 -2 1 \
+  <(awk 'NR>1 {print $3, $5}' pairwise_fst.EAS.EUR.fst.var | sort -k1,1) \
+  <(awk 'NR>1 {print $3, $5}' pairwise_fst.EAS.KAZ.fst.var | sort -k1,1) | \
+join -1 1 -2 1 - \
+  <(awk 'NR>1 {print $3, $5}' pairwise_fst.EUR.KAZ.fst.var | sort -k1,1) | \
+awk 'BEGIN{OFS="\t"; print "rsID\tFST_EAS_EUR\tFST_EAS_KAZ\tFST_EUR_KAZ"} {print $1, $2, $3, $4}' > FSTs.txt
+
+
+# 5) Calculate LSBL = FST(KAZ,EUR)+FST(KAZ,EAS)-FST(EUR,EAS)/2
+# 6) Rank LSBLs for all SNPs in the genome and calculate where your SNPs of interest locate in it; provide percentile (empirical P-value) - genome-wide empirical distribution, using the formula PE (x)=(number of loci>x)/(total number loci)
+# In Python script (notebook)
