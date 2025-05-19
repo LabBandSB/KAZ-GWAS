@@ -316,3 +316,6 @@ awk -F'\t' '$14 == "ExonicFunc.knownGene" || $333 == "pathogenic"|| $333 == "ris
 
 # merging them all together:
 cat lactose.tsv alcohol.tsv pharm_idda.tsv druggable_mafs.tsv thyroid.tsv deleterious.tsv clinvar_drug_response.tsv clinvar_pathogenic_riskfactor.tsv > snps_of_interest.tsv
+
+# find
+cat snps_of_interest.tsv | grep -f final_list.txt
