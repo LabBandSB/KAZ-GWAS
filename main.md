@@ -244,7 +244,7 @@ plink --bfile merged6 \
 
 LSBL test for statistically significant differences between populations:
 # 1) using HGDP WGS data get 3 datasets (separate) with Kazakh (224) + East Asian (152) + European (121)
-
+```bash
 cat ethnic.tsv | grep -e French -e Basque -e Sardinian -e Russian -e Orcadian -e Tuscan -e Bergamo | awk '{print $1"\t"$1}' > samples_EUR.txt
 cat ethnic.tsv | grep -e Han -e Japanese -e Dai -e Hezhen -e Miao -e Naxi -e Oroqen -e She -e Tujia -e Tu -we Xibo -e Yi -e Cambodian -e Lahu -e Daur -e Mongolian | awk '{print $1"\t"$1}' > samples_EAS.txt
 cat ethnic.tsv | grep Kazakh | awk '{print $1"\t"$1}' > samples_KAZ.txt
@@ -319,3 +319,4 @@ cat lactose.tsv alcohol.tsv pharm_idda.tsv druggable_mafs.tsv thyroid.tsv delete
 
 # find
 cat snps_of_interest.tsv | grep -f final_list.txt
+```
