@@ -290,11 +290,6 @@ join -1 1 -2 1 \
 join -1 1 -2 1 - \
   <(awk 'NR>1 {print $3, $5}' pairwise_fst.EUR.KAZ.fst.var | sort -k1,1) | \
 awk 'BEGIN{OFS="\t"; print "rsID\tFST_EAS_EUR\tFST_EAS_KAZ\tFST_EUR_KAZ"} {print $1, $2, $3, $4}' > FSTs.txt
-
-
-# 5) Calculate LSBL = FST(KAZ,EUR)+FST(KAZ,EAS)-FST(EUR,EAS)/2
-# 6) Rank LSBLs for all SNPs in the genome and calculate where your SNPs of interest locate in it; provide percentile (empirical P-value) - genome-wide empirical distribution, using the formula PE (x)=(number of loci>x)/(total number loci)
-# In Python script (notebook)
 ```
 
 
@@ -319,4 +314,8 @@ cat lactose.tsv alcohol.tsv pharm_idda.tsv druggable_mafs.tsv thyroid.tsv delete
 
 # find
 cat snps_of_interest.tsv | grep -f final_list.txt
+
+# 5) Calculate LSBL = FST(KAZ,EUR)+FST(KAZ,EAS)-FST(EUR,EAS)/2
+# 6) Rank LSBLs for all SNPs in the genome and calculate where your SNPs of interest locate in it; provide percentile (empirical P-value) - genome-wide empirical distribution, using the formula PE (x)=(number of loci>x)/(total number loci)
+# In Python script (notebook)
 ```
