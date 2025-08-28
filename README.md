@@ -40,5 +40,5 @@ Make a text file that contains the genotype of entire samples and probes.
 1) prepared .map file was used for further analysis
 2) prepared .ped file needed further processing to include phenotypes (analysis shown in plink_qc1.md)
 3) prepared .ped and .map files were processed for quality control (analysis shown in plink_qc2.md)
-4) PCA (plot PCA script), ROH (FROH script), Fst analyses (plot fst heatmap script) were performed using other populations from Human Genome Diversity Project (HGDP) (analysis shown in plink_HGDP.md)
+4) PCA (plot PCA script), ROH (FROH script), Fst analyses (plot fst heatmap script, calculate average IBD script) were performed using other populations from Human Genome Diversity Project (HGDP) (analysis shown in plink_HGDP.md)
 5) Statistical significance was determined for SNPs that are diverging in Kazakh population (LSBL script)
