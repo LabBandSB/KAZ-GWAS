@@ -337,9 +337,9 @@ awk -F'\t' '$70 == "D" && $76 == "D" {for (i=463; i<=686; i++) if ($i == "1/1") 
 plink --bfile only_EAS --recode vcf --out only_EAS
 plink --bfile only_EUR --recode vcf --out only_EUR
 plink --bfile only_KAZ --recode vcf --out only_KAZ
+
 # for those rows where only_EAS.vcf column 3 is present in column 23 of final_annovared_extended.tsv, add columns 70 and 76 from final_annovared_extended.tsv as the last 2 columns in the annotated_only_EAS.vcf
 cat final_annovared_extended.tsv | cut -f 23,70,76 > rs_sift_polyphen.txt
-
 awk -F'\t' 'FNR==NR {map[$1]=$2"\t"$3; next} 
             /^#/ {print; next} 
             ($3 in map) {print $0"\t"map[$3]}' OFS='\t' rs_sift_polyphen.txt only_EAS.vcf > annotated_only_EAS.vcf
@@ -351,21 +351,24 @@ awk -F'\t' 'FNR==NR {map[$1]=$2"\t"$3; next}
 awk -F'\t' 'FNR==NR {map[$1]=$2"\t"$3; next} 
             /^#/ {print; next} 
             ($3 in map) {print $0"\t"map[$3]}' OFS='\t' rs_sift_polyphen.txt only_KAZ.vcf > annotated_only_KAZ.vcf
+```
 
 
-awk -F'\t' '$162 == "D" && $163 == "D" {for (i=10; i<=161; i++) if ($i == "1/1") count[i]++} END {sum=0; for (i=10; i<=161; i++) sum+=count[i]; print "Average EAS: ", sum/(161-10+1)}' annotated_only_EAS.vcf
+heterozgyous or homozygous for each individual
+```bash
+awk -F'\t' '$162 == "D" && $163 == "D" {for (i=10; i<=161; i++) if ($i == "1/1" || $i == "0/1" || $i == "1/0") count[i]++} END {for (i=10; i<=161; i++) print "Individual " i-9 ": " count[i]}' annotated_only_EAS.vcf
 
-awk -F'\t' '$131 == "D" && $132 == "D" {for (i=10; i<=130; i++) if ($i == "1/1") count[i]++} END {sum=0; for (i=10; i<=130; i++) sum+=count[i]; print "Average EUR: ", sum/(130-10+1)}' annotated_only_EUR.vcf
+awk -F'\t' '$131 == "D" && $132 == "D" {for (i=10; i<=130; i++) if ($i == "1/1" || $i == "0/1" || $i == "1/0") count[i]++} END {for (i=10; i<=130; i++) print "Individual " i-9 ": " count[i]}' annotated_only_EUR.vcf
 
-awk -F'\t' '$234 == "D" && $235 == "D" {for (i=10; i<=233; i++) if ($i == "1/1") count[i]++} END {sum=0; for (i=10; i<=233; i++) sum+=count[i]; print "Average KAZ: ", sum/(233-10+1)}' annotated_only_KAZ.vcf
+awk -F'\t' '$234 == "D" && $235 == "D" {for (i=10; i<=233; i++) if ($i == "1/1" || $i == "0/1" || $i == "1/0") count[i]++} END {for (i=10; i<=233; i++) print "Individual " i-9 ": " count[i]}' annotated_only_KAZ.vcf
 
-plink --bfile only_EAS --freq --out only_EAS
-plink --bfile only_EUR --freq --out only_EUR
-plink --bfile only_KAZ --freq --out only_KAZ
-cat only_KAZ.frq | awk '{print $5}' 
-cat only_EUR.frq | awk '{print $5}'
-cat only_EAS.frq | awk '{print $5}'
+Average EAS:  79.9934
+Average EUR:  85.9339
+Average KAZ:  89.5938
+```
 
+homozygous alt for each individual
+```bash
 awk -F'\t' '$162 == "D" && $163 == "D" {for (i=10; i<=161; i++) if ($i == "1/1") count[i]++} END {for (i=10; i<=161; i++) print "Individual " i-9 ": " count[i]}' annotated_only_EAS.vcf
 
 awk -F'\t' '$131 == "D" && $132 == "D" {for (i=10; i<=130; i++) if ($i == "1/1") count[i]++} END {for (i=10; i<=130; i++) print "Individual " i-9 ": " count[i]}' annotated_only_EUR.vcf
@@ -375,25 +378,18 @@ awk -F'\t' '$234 == "D" && $235 == "D" {for (i=10; i<=233; i++) if ($i == "1/1")
 #Average EAS:  12.0855
 #Average EUR:  10.7851
 #Average KAZ:  11.2857
+```
+
+| Population | Homozygogous alt | Alt present |
+|------------|------------------|-------------|
+| KAZ        |          11.2857 |     89.5938 |
+| EAS        |          12.0855 |     79.9934 | 
+| EUR        |          10.7851 |     85.9339 |
 
 
-# using not only 1/1 but also 0/1,1/0 but it shows 1297 for all. why?
-awk -F'\t' '$162 == "D" && $163 == "D" {for (i=10; i<=161; i++) if ($i == "1/1" || $i = "0/1" || $i == "1/0") count[i]++} END {sum=0; for (i=10; i<=161; i++) sum+=count[i]; print "Average EAS: ", sum/(161-10+1)}' annotated_only_EAS.vcf
-
-awk -F'\t' '$131 == "D" && $132 == "D" {for (i=10; i<=130; i++) if ($i == "1/1" || $i = "0/1" || $i == "1/0") count[i]++} END {sum=0; for (i=10; i<=130; i++) sum+=count[i]; print "Average EUR: ", sum/(130-10+1)}' annotated_only_EUR.vcf
-
-awk -F'\t' '$234 == "D" && $235 == "D" {for (i=10; i<=233; i++) if ($i == "1/1" || $i = "0/1" || $i == "1/0") count[i]++} END {sum=0; for (i=10; i<=233; i++) sum+=count[i]; print "Average KAZ: ", sum/(233-10+1)}' annotated_only_KAZ.vcf
-
-
-# not dividing
-awk -F'\t' '$162 == "D" && $163 == "D" {for (i=10; i<=161; i++) if ($i == "1/1" || $i = "0/1" || $i == "1/0") count[i]++} END {sum=0; for (i=10; i<=161; i++) sum+=count[i]; print " EAS: ", sum}' annotated_only_EAS.vcf
-
-awk -F'\t' '$131 == "D" && $132 == "D" {for (i=10; i<=130; i++) if ($i == "1/1" || $i = "0/1" || $i == "1/0") count[i]++} END {sum=0; for (i=10; i<=130; i++) sum+=count[i]; print " EUR: ", sum}' annotated_only_EUR.vcf
-
-awk -F'\t' '$234 == "D" && $235 == "D" {for (i=10; i<=233; i++) if ($i == "1/1" || $i = "0/1" || $i == "1/0") count[i]++} END {sum=0; for (i=10; i<=233; i++) sum+=count[i]; print " KAZ: ", sum}' annotated_only_KAZ.vcf
-
-
-# only 0/0
-awk -F'\t' '$162 == "D" && $163 == "D" {for (i=10; i<=161; i++) if ($i == "0/0") count[i]++} END {sum=0; for (i=10; i<=161; i++) sum+=count[i]; print "Average EAS: ", sum/(161-10+1)}' annotated_only_EAS.vcf
-awk -F'\t' '$131 == "D" && $132 == "D" {for (i=10; i<=130; i++) if ($i == "0/0") count[i]++} END {sum=0; for (i=10; i<=130; i++) sum+=count[i]; print "Average EUR: ", sum/(130-10+1)}' annotated_only_EUR.vcf
-awk -F'\t' '$234 == "D" && $235 == "D" {for (i=10; i<=233; i++) if ($i == "0/0") count[i]++} END {sum=0; for (i=10; i<=233; i++) sum+=count[i]; print "Average KAZ: ", sum/(233-10+1)}' annotated_only_KAZ.vcf
+frequencies:
+```bash
+plink --bfile only_EAS --freq --out only_EAS
+plink --bfile only_EUR --freq --out only_EUR
+plink --bfile only_KAZ --freq --out only_KAZ
+```
